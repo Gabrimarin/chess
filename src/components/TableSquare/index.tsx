@@ -1,3 +1,5 @@
+import boardColors from "../../styles/board/boardColors";
+
 const getPieceImage = (piece?: string | null): any => {
   if (!piece) return null;
   // itentify if the piece is white or black
@@ -8,17 +10,24 @@ const getPieceImage = (piece?: string | null): any => {
   return pieceImage;
 };
 
+type StateType = "default" | "selected" | "possible";
 interface TableSquareProps {
-  color?: "white" | "black";
+  color: BoardColor;
   piece: string | null;
+  state?: StateType;
+  name: string;
+  onClick?: () => void;
 }
 
-const TableSquare = ({ color = "white", piece = "p" }: TableSquareProps) => {
-  const colors: { [key: string]: string } = {
-    white: "white",
-    black: "brown",
-  };
+type BoardColor = "white" | "black";
 
+const TableSquare = ({
+  color = "white",
+  piece = "p",
+  state = "default",
+  onClick,
+  name,
+}: TableSquareProps) => {
   const pieceImage = getPieceImage(piece);
 
   return (
@@ -26,9 +35,11 @@ const TableSquare = ({ color = "white", piece = "p" }: TableSquareProps) => {
       style={{
         width: 50,
         height: 50,
-        backgroundColor: colors[color],
+        backgroundColor: boardColors[color][state],
       }}
+      onClick={onClick}
     >
+      {name}
       {piece && (
         <img
           src={pieceImage}

@@ -1,7 +1,17 @@
 import React from "react";
 import TableSquare from "../TableSquare";
-
-function Table({ table }: { table: (string | null)[][] }) {
+const letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
+function Table({
+  table,
+  onClickSquare,
+  selected,
+  possibleMoves,
+}: {
+  table: (string | null)[][];
+  onClickSquare: (name: string) => void;
+  selected: string | null;
+  possibleMoves: string[] | undefined;
+}) {
   return (
     <div
       style={{
@@ -23,9 +33,20 @@ function Table({ table }: { table: (string | null)[][] }) {
             }}
           >
             {row.map((cell, j) => {
+              const squareName = letters[j] + (8 - i);
+              const state =
+                selected === squareName
+                  ? "selected"
+                  : possibleMoves?.includes(squareName)
+                  ? "possible"
+                  : "default";
+
               return (
                 <TableSquare
+                  state={state}
                   piece={cell}
+                  onClick={() => onClickSquare(squareName)}
+                  name={squareName}
                   key={j}
                   color={(i + j) % 2 === 0 ? "white" : "black"}
                 />
