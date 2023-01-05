@@ -1,3 +1,5 @@
+import { PieceColor } from "../../models/basicTypes";
+import colors from "../../styles/board/boardColors";
 import boardColors from "../../styles/board/boardColors";
 
 const getPieceImage = (piece?: string | null): any => {
@@ -12,14 +14,12 @@ const getPieceImage = (piece?: string | null): any => {
 
 type StateType = "default" | "selected" | "possible";
 interface TableSquareProps {
-  color: BoardColor;
+  color: PieceColor;
   piece: string | null;
   state?: StateType;
   name: string;
   onClick?: () => void;
 }
-
-type BoardColor = "white" | "black";
 
 const TableSquare = ({
   color = "white",
@@ -36,10 +36,22 @@ const TableSquare = ({
         width: 50,
         height: 50,
         backgroundColor: boardColors[color][state],
+        position: "relative",
       }}
       onClick={onClick}
     >
-      {name}
+      <span
+        style={{
+          color: colors[color === "white" ? "black" : "white"].default,
+          position: "absolute",
+          fontSize: 11,
+          fontWeight: "bold",
+          top: 2,
+          left: 2,
+        }}
+      >
+        {name}
+      </span>
       {piece && (
         <img
           src={pieceImage}

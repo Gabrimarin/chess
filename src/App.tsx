@@ -1,79 +1,33 @@
 import { useState } from "react";
 import "./App.css";
 import Table from "./components/Table";
-
-const getSquareName = (letterIndex: number, numberIndex: number) => {
-  const letter = "abcdefgh"[letterIndex];
-  const number = 8 - numberIndex;
-  return letter + number;
-};
-
-const getPositionFromSquareName = (sqName: string) => {
-  const [letter, number] = sqName.split("");
-  const letterIndex = "abcdefgh".indexOf(letter);
-  const numberIndex = 8 - parseInt(number);
-  return [letterIndex, numberIndex];
-};
-
-const getPieceFromSquare = (
-  table: (string | null)[][],
-  sqName: string
-): string | null => {
-  const [letterIndex, numberIndex] = getPositionFromSquareName(sqName);
-  return table[numberIndex][letterIndex];
-};
-
-const getTableAfterMove = (
-  table: (string | null)[][],
-  from: string,
-  to: string
-) => {
-  const piece = getPieceFromSquare(table, from);
-  const piecePosition = getPositionFromSquareName(from);
-  const position = getPositionFromSquareName(to);
-  const newTable = table.map((row) => row.map((cell) => cell));
-  newTable[piecePosition[1]][piecePosition[0]] = null;
-  newTable[position[1]][position[0]] = piece;
-  return newTable;
-};
-
-const getPossibleMoves = (table: (string | null)[][], sqName: string) => {
-  const moves: string[] = [];
-  table.forEach((row, i) => {
-    row.forEach((cell, j) => {
-      const squareName = getSquareName(j, i);
-      if (squareName !== sqName) {
-        moves.push(squareName);
-      } else {
-        console.log("same square");
-        console.log(j, i, sqName, squareName);
-      }
-    });
-  });
-  return moves;
-};
+import { Move, PieceColor, TableType } from "./models/basicTypes";
+import { initialPositionFen } from "./utils/piecesMoves/constants";
+import {
+  fenToTable,
+  getPieceColor,
+  getPieceFromSquare,
+  getPossibleMoves,
+  getTableAfterMove,
+} from "./utils/piecesMoves/general";
 
 function App() {
-  const initial_table = [
-    ["p", "P", "P", "p", "p", "p", "p", "P"],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-  ];
+  const initial_table = fenToTable(initialPositionFen);
   const [selected, setSelected] = useState<string | null>(null);
-  const [table, setTable] = useState<(string | null)[][]>(initial_table);
+  const [table, setTable] = useState<TableType>(initial_table);
+  const [moves, setMoves] = useState<Move[]>([]);
+  const turn: PieceColor = moves.length % 2 === 0 ? "white" : "black";
+
   const possibleMoves = selected
-    ? getPossibleMoves(table, selected)
+    ? getPossibleMoves(table, selected, moves)
     : undefined;
 
   const onClickSquare = (sqName: string) => {
     if (selected) {
-      if (selected !== sqName) {
-        const newTable = getTableAfterMove(table, selected, sqName);
+      const move = possibleMoves!.find((m) => m.to === sqName);
+      if (move) {
+        const newTable = getTableAfterMove(table, move);
+        setMoves([...moves, move]);
         setTable(newTable);
         setSelected(null);
       } else {
@@ -81,7 +35,7 @@ function App() {
       }
     } else {
       const pieceOfSquare = getPieceFromSquare(table, sqName);
-      if (pieceOfSquare) {
+      if (pieceOfSquare && getPieceColor(pieceOfSquare) === turn) {
         setSelected(sqName);
       }
     }
@@ -95,6 +49,8 @@ function App() {
         onClickSquare={onClickSquare}
         possibleMoves={possibleMoves}
       />
+      <p>{moves.join(", ")}</p>
+      <p>{turn}</p>
     </div>
   );
 }

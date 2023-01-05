@@ -1,4 +1,5 @@
 import React from "react";
+import { Move } from "../../models/basicTypes";
 import TableSquare from "../TableSquare";
 const letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
 function Table({
@@ -10,7 +11,7 @@ function Table({
   table: (string | null)[][];
   onClickSquare: (name: string) => void;
   selected: string | null;
-  possibleMoves: string[] | undefined;
+  possibleMoves: Move[] | undefined;
 }) {
   return (
     <div
@@ -37,7 +38,7 @@ function Table({
               const state =
                 selected === squareName
                   ? "selected"
-                  : possibleMoves?.includes(squareName)
+                  : possibleMoves?.find((move) => move.to === squareName)
                   ? "possible"
                   : "default";
 
