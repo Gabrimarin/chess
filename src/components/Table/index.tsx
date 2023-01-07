@@ -1,5 +1,6 @@
 import React from "react";
-import { Move } from "../../models/basicTypes";
+import { Move, PieceColor } from "../../models/basicTypes";
+import { getPieceColor } from "../../utils/piecesMoves/general";
 import TableSquare from "../TableSquare";
 const letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
 function Table({
@@ -7,11 +8,15 @@ function Table({
   onClickSquare,
   selected,
   possibleMoves,
+  turn,
+  isCheck,
 }: {
   table: (string | null)[][];
   onClickSquare: (name: string) => void;
   selected: string | null;
   possibleMoves: Move[] | undefined;
+  turn: PieceColor;
+  isCheck: boolean;
 }) {
   return (
     <div
@@ -41,7 +46,11 @@ function Table({
                   : possibleMoves?.find((move) => move.to === squareName)
                   ? "possible"
                   : "default";
-
+              const isTurnKing =
+                cell !== null &&
+                getPieceColor(cell) === turn &&
+                cell?.toUpperCase() === "K";
+              const isCheckSquare = isCheck && isTurnKing;
               return (
                 <TableSquare
                   state={state}
@@ -50,6 +59,7 @@ function Table({
                   name={squareName}
                   key={j}
                   color={(i + j) % 2 === 0 ? "white" : "black"}
+                  isCheck={isCheckSquare}
                 />
               );
             })}

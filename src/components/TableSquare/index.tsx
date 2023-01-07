@@ -19,6 +19,7 @@ interface TableSquareProps {
   state?: StateType;
   name: string;
   onClick?: () => void;
+  isCheck: boolean;
 }
 
 const TableSquare = ({
@@ -27,6 +28,7 @@ const TableSquare = ({
   state = "default",
   onClick,
   name,
+  isCheck = false,
 }: TableSquareProps) => {
   const pieceImage = getPieceImage(piece);
 
@@ -37,6 +39,7 @@ const TableSquare = ({
         height: 50,
         backgroundColor: boardColors[color][state],
         position: "relative",
+        border: isCheck ? "2px solid red" : "none",
       }}
       onClick={onClick}
     >

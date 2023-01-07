@@ -18,10 +18,12 @@ const pawnPositions = {
   white: {
     firstLine: "2",
     enPassant: "5",
+    promotion: "8",
   },
   black: {
     firstLine: "7",
     enPassant: "4",
+    promotion: "1",
   },
 };
 
@@ -34,11 +36,14 @@ const getPawnFrontMove = (
   if (!frontSquare) return null;
   const frontSquarePiece = getPieceFromSquare(table, frontSquare);
   if (frontSquarePiece) return null;
+  const frontSquareLine = frontSquare[1];
+  const isPromotion = frontSquareLine === pawnPositions[pawnColor].promotion;
 
   return {
     from: sqName,
     to: frontSquare,
-    flag: "basic",
+    piece: pawnColor === "white" ? "P" : "p",
+    flag: isPromotion ? "promotion" : "basic",
   };
 };
 
@@ -47,6 +52,7 @@ const getPawnEatingMoves = (
   pawnColor: PieceColor,
   table: TableType
 ) => {
+  const piece = pawnColor === "white" ? "P" : "p";
   const moves: Move[] = [];
   const squareInRightFront = getSquareInRightFront(sqName, pawnColor);
   const pieceInRightFront =
@@ -55,7 +61,7 @@ const getPawnEatingMoves = (
     pieceInRightFront && getPieceColor(pieceInRightFront);
 
   if (pieceInRightFrontColor && pieceInRightFrontColor !== pawnColor)
-    moves.push(getMove(sqName, squareInRightFront, "eating"));
+    moves.push(getMove(sqName, squareInRightFront, piece, "eating"));
 
   const squareInLeftFront = getSquareInLeftFront(sqName, pawnColor);
   const pieceInLeftFront =
@@ -63,7 +69,7 @@ const getPawnEatingMoves = (
   const pieceInLeftFrontColor =
     pieceInLeftFront && getPieceColor(pieceInLeftFront);
   if (pieceInLeftFrontColor && pieceInLeftFrontColor !== pawnColor)
-    moves.push(getMove(sqName, squareInLeftFront, "eating"));
+    moves.push(getMove(sqName, squareInLeftFront, piece, "eating"));
   return moves;
 };
 
@@ -76,9 +82,12 @@ const getPawnDoubleMove = (
   const isInitialPosition = pawnPositions[pawnColor].firstLine === squareLine;
   if (!isInitialPosition) return null;
   const frontSquare = getSquareInFront(sqName, pawnColor)!;
-  const squareInFront2 = getPawnFrontMove(frontSquare, pawnColor, table)!.to;
-  if (!squareInFront2) return null;
-  return getMove(sqName, squareInFront2);
+  const frontSquarePiece = getPieceFromSquare(table, frontSquare);
+  if (frontSquarePiece) return null;
+  const squareInFront2 = getSquareInFront(frontSquare, pawnColor);
+  const squareInFront2Piece = getPieceFromSquare(table, squareInFront2!);
+  if (squareInFront2Piece) return null;
+  return getMove(sqName, squareInFront2!, pawnColor === "white" ? "P" : "p");
 };
 
 const getEnPassantMove = (
@@ -87,6 +96,8 @@ const getEnPassantMove = (
   table: TableType,
   moves: Move[]
 ) => {
+  const piece = pawnColor === "white" ? "P" : "p";
+  if (moves.length === 0) return null;
   const [, squareLine] = sqName.split("");
   const isFromEnPassantSquare =
     pawnPositions[pawnColor].enPassant === squareLine;
@@ -111,7 +122,7 @@ const getEnPassantMove = (
       parseInt(pawnPositions[pawnColor].enPassant) +
       (pawnColor === "white" ? 1 : -1)
     }`;
-    return getMove(sqName, enPassantSquare, "enPassant");
+    return getMove(sqName, enPassantSquare, piece, "enPassant");
   }
 };
 
