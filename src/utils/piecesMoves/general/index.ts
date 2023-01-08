@@ -9,7 +9,7 @@ import { getPawnProcessedMoves } from "../pawnMoves";
 import { getBishopProcessedMoves } from "../bishopMoves";
 import { getRookProcessedMoves } from "../rookMoves";
 import { getQueenProcessedMoves } from "../queenMoves";
-// import { getKingProcessedMoves } from "../kingMoves";
+import { getKingProcessedMoves } from "../kingMoves";
 
 export const getPieceColor = (piece: string): PieceColor => {
   return piece === piece.toUpperCase() ? "white" : "black";
@@ -102,6 +102,7 @@ const getMovesInDirection = (
   directionGetter: Function,
   table: TableType
 ) => {
+  const piece = getPieceFromSquare(table, sqName)!;
   const pieceColor = getPieceColorFromSquare(table, sqName)!;
   const moves: Move[] = [];
   let nextSquare = directionGetter(sqName, pieceColor);
@@ -110,11 +111,11 @@ const getMovesInDirection = (
     if (nextSquarePiece) {
       const nextSquarePieceColor = getPieceColor(nextSquarePiece);
       if (nextSquarePieceColor !== pieceColor) {
-        moves.push(getMove(sqName, nextSquare, "eating"));
+        moves.push(getMove(sqName, nextSquare, piece, "eating"));
       }
       break;
     }
-    moves.push(getMove(sqName, nextSquare, "basic"));
+    moves.push(getMove(sqName, nextSquare, piece, "basic"));
     nextSquare = directionGetter(nextSquare, pieceColor);
   }
   return moves;
@@ -160,7 +161,6 @@ export const getSquareName = (letterIndex: number, numberIndex: number) => {
 };
 
 export const getTableAfterMove = (table: TableType, move: Move) => {
-  console.log("getTableAfterMove", move);
   const piece = getPieceFromSquare(table, move.from);
   const piecePosition = getPositionFromSquareName(move.from);
   const position = getPositionFromSquareName(move.to);
@@ -172,12 +172,24 @@ export const getTableAfterMove = (table: TableType, move: Move) => {
       getSquareInBack(move.to, getPieceColor(piece!)!)!
     );
     newTable[eatenPiecePosition[1]][eatenPiecePosition[0]] = null;
+  } else if (move.flag === "promotion") {
+    const promotionPosition = getPositionFromSquareName(move.to);
+    newTable[promotionPosition[1]][promotionPosition[0]] =
+      getPieceColor(move.piece) === "white" ? "Q" : "q";
+  } else if (move.flag === "castling") {
+    const { castlingSide, rookInitial, rookGoesTo, kingGoesTo } = move.payload;
+    const rookPosition = getPositionFromSquareName(rookInitial);
+    const rook = getPieceFromSquare(table, rookInitial);
+    newTable[rookPosition[1]][rookPosition[0]] = null;
+    const kingPosition = getPositionFromSquareName(move.to);
+    newTable[kingPosition[1]][kingPosition[0]] = piece;
+    const rookGoesToPosition = getPositionFromSquareName(rookGoesTo);
+    newTable[rookGoesToPosition[1]][rookGoesToPosition[0]] = rook;
   }
-  console.log("newTable", newTable);
   return newTable;
 };
 
-const getMoviesOfPiece = (
+const getMovesOfPiece = (
   piece: string,
   sqName: string,
   table: TableType,
@@ -195,46 +207,30 @@ const getMoviesOfPiece = (
   if (["q", "Q"].includes(piece)) {
     return getQueenProcessedMoves(sqName, table);
   }
-  // if (["k", "K"].includes(piece)) {
-  //   return getKingProcessedMoves(sqName, table);
-  // }
   return [];
 };
 
 const removeInvalidMoves = (
   moves: Move[],
   table: TableType,
-  color: PieceColor
+  color: PieceColor,
+  gameMoves: Move[]
 ) => {
   const newMoves: Move[] = [];
   moves.forEach((move) => {
     const newTable = getTableAfterMove(table, move);
-    if (!evaluateCheck(newTable, color)) {
+    const kingPosition = getKingPosition(newTable, color);
+    const allPossibleMovesOfOpponent = getAllPossibleMoves(
+      newTable,
+      gameMoves,
+      true,
+      true
+    ).filter((m) => getPieceColorFromSquare(newTable, m.from) !== color);
+    if (!isSquareAttacked(kingPosition, allPossibleMovesOfOpponent)) {
       newMoves.push(move);
     }
   });
   return newMoves;
-};
-
-export const getPossibleMoves = (
-  table: TableType,
-  sqName: string,
-  moves: Move[],
-  passCheckValidation = false
-): Move[] => {
-  const possibleMoves: Move[] = [];
-
-  const piece = getPieceFromSquare(table, sqName);
-  if (!piece) {
-    return possibleMoves;
-  }
-  const pieceColor = getPieceColor(piece);
-  const pieceMoves = getMoviesOfPiece(piece, sqName, table, moves);
-  if (passCheckValidation) {
-    return pieceMoves;
-  }
-  const validMoves = removeInvalidMoves(pieceMoves, table, pieceColor);
-  return validMoves;
 };
 
 export const fenToTable = (fen: string): TableType => {
@@ -253,26 +249,74 @@ export const fenToTable = (fen: string): TableType => {
   });
 };
 
-const getAllPossibleMoves = (
+export const isSquareAttacked = (
+  sqName: string,
+  possibleMovesOfNotTurn: Move[]
+) => {
+  return possibleMovesOfNotTurn.some((move) => move.to === sqName);
+};
+
+export const getAllPossibleMoves = (
   table: TableType,
-  color: PieceColor,
-  passCheckValidation = false
+  gameMoves: Move[],
+  passCheckValidation: boolean = false,
+  exceptKing: boolean = false
 ) => {
   const moves: Move[] = [];
   table.forEach((row, i) => {
     row.forEach((piece, j) => {
-      if (piece && getPieceColor(piece) === color) {
+      if (piece && piece.toLowerCase() !== "k") {
         const squareName = getSquareName(j, i);
-        moves.push(
-          ...getPossibleMoves(table, squareName, moves, passCheckValidation)
-        );
+        const pieceMoves = getMovesOfPiece(piece, squareName, table, gameMoves);
+        if (passCheckValidation) {
+          moves.push(...pieceMoves);
+        } else {
+          const pieceColor = getPieceColor(piece);
+          const validMoves = removeInvalidMoves(
+            pieceMoves,
+            table,
+            pieceColor,
+            gameMoves
+          );
+          moves.push(...validMoves);
+        }
       }
     });
   });
+  if (exceptKing) {
+    return moves;
+  }
+
+  const colorList: PieceColor[] = ["white", "black"];
+
+  colorList.forEach((color) => {
+    const kingPosition = getKingPosition(table, color);
+    const possibleMovesOfOpponent = moves.filter(
+      (m) => getPieceColor(m.piece) !== color
+    );
+
+    const kingMoves = getKingProcessedMoves(
+      kingPosition,
+      table,
+      possibleMovesOfOpponent,
+      gameMoves
+    );
+    if (passCheckValidation) {
+      moves.push(...kingMoves);
+    }
+    const validKingMoves = removeInvalidMoves(
+      kingMoves,
+      table,
+      color,
+      gameMoves
+    );
+    moves.push(...validKingMoves);
+  });
+
   return moves;
 };
 
-const getKingPosition = (table: TableType, color: PieceColor) => {
+export const getKingPosition = (table: TableType, color: PieceColor) => {
   for (let i = 0; i < table.length; i++) {
     for (let j = 0; j < table[i].length; j++) {
       const piece = table[i][j];
@@ -285,30 +329,5 @@ const getKingPosition = (table: TableType, color: PieceColor) => {
       }
     }
   }
-};
-
-// Returns true if king of selected color is in check
-export const evaluateCheck = (table: TableType, color: PieceColor) => {
-  const moves = getAllPossibleMoves(
-    table,
-    color === "white" ? "black" : "white",
-    true
-  );
-  const kingPosition = getKingPosition(table, color);
-  return moves.some((move) => move.to === kingPosition);
-};
-
-// Returns true if king of selected color is in checkmate
-export const evaluateCheckmate = (table: TableType, color: PieceColor) => {
-  const isCheck = evaluateCheck(table, color);
-  if (!isCheck) return false;
-  const moves = getAllPossibleMoves(table, color);
-  return moves.length === 0;
-};
-
-export const evaluateStalemate = (table: TableType, color: PieceColor) => {
-  const isCheck = evaluateCheck(table, color);
-  if (isCheck) return false;
-  const moves = getAllPossibleMoves(table, color);
-  return moves.length === 0;
+  return "";
 };

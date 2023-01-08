@@ -36,14 +36,11 @@ const getPawnFrontMove = (
   if (!frontSquare) return null;
   const frontSquarePiece = getPieceFromSquare(table, frontSquare);
   if (frontSquarePiece) return null;
-  const frontSquareLine = frontSquare[1];
-  const isPromotion = frontSquareLine === pawnPositions[pawnColor].promotion;
-
   return {
     from: sqName,
     to: frontSquare,
     piece: pawnColor === "white" ? "P" : "p",
-    flag: isPromotion ? "promotion" : "basic",
+    flag: "basic",
   };
 };
 
@@ -117,13 +114,12 @@ const getEnPassantMove = (
     enPassantSquareColumn2 + pawnPositions[pawnColor].enPassant,
   ];
   const isLastMoveToEnPassantSquare = enPassantSquares.includes(lastMoveTo);
-  if (isLastMoveToEnPassantSquare) {
-    const enPassantSquare = `${lastMoveTo[0]}${
-      parseInt(pawnPositions[pawnColor].enPassant) +
-      (pawnColor === "white" ? 1 : -1)
-    }`;
-    return getMove(sqName, enPassantSquare, piece, "enPassant");
-  }
+  if (!isLastMoveToEnPassantSquare) return null;
+  const enPassantSquare = `${lastMoveTo[0]}${
+    parseInt(pawnPositions[pawnColor].enPassant) +
+    (pawnColor === "white" ? 1 : -1)
+  }`;
+  return getMove(sqName, enPassantSquare, piece, "enPassant");
 };
 
 export const getPawnProcessedMoves = (
@@ -133,7 +129,7 @@ export const getPawnProcessedMoves = (
 ) => {
   const pawnColor = getPieceColorFromSquare(table, sqName);
   if (!pawnColor) return [];
-  const possibleMoves = [];
+  const possibleMoves: (Move | null)[] = [];
   // Front move
   possibleMoves.push(getPawnFrontMove(sqName, pawnColor, table));
   // Diagonal move
@@ -150,5 +146,13 @@ export const getPawnProcessedMoves = (
   const filteredPossibleMoves = possibleMoves.filter(
     (move) => move !== null
   ) as Move[];
-  return filteredPossibleMoves;
+
+  return filteredPossibleMoves.map((move) => {
+    const [, squareLine] = move.to.split("");
+    const isPromotion = squareLine === pawnPositions[pawnColor].promotion;
+    return {
+      ...move,
+      flag: isPromotion ? "promotion" : move.flag,
+    };
+  });
 };
