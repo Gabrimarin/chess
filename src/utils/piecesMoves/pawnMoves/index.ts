@@ -36,12 +36,12 @@ const getPawnFrontMove = (
   if (!frontSquare) return null;
   const frontSquarePiece = getPieceFromSquare(table, frontSquare);
   if (frontSquarePiece) return null;
-  return {
-    from: sqName,
-    to: frontSquare,
-    piece: pawnColor === "white" ? "P" : "p",
-    flag: "basic",
-  };
+  return getMove(
+    sqName,
+    frontSquare,
+    pawnColor === "white" ? "P" : "p",
+    "basic"
+  );
 };
 
 const getPawnEatingMoves = (

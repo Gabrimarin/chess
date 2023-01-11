@@ -1,15 +1,33 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import reportWebVitals from "./reportWebVitals";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import InitialMenu from "./routes/InitialMenu";
+import LocalMatch from "./routes/LocalMatch";
+import OnlineMatch from "./routes/OnlineMatch";
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <InitialMenu />,
+  },
+  {
+    path: "/local",
+    element: <LocalMatch />,
+  },
+  {
+    path: "/online/:id",
+    element: <OnlineMatch />,
+  },
+]);
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById("root") as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </React.StrictMode>
 );
 

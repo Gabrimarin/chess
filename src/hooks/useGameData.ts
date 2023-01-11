@@ -1,29 +1,35 @@
-import React, { useState } from "react";
-import "./App.css";
-import Table from "./components/Table";
-import { Move, PieceColor, TableType } from "./models/basicTypes";
-import { initialPositionFen } from "./utils/piecesMoves/constants";
+import { useState } from "react";
+import { Move, PieceColor, TableType } from "../models/basicTypes";
+import { initialPositionFen } from "../utils/piecesMoves/constants";
 import {
   fenToTable,
   getAllPossibleMoves,
+  getFilteredMoves,
   getKingPosition,
   getPieceColor,
   getPieceFromSquare,
   getTableAfterMove,
-  isSquareAttacked,
-} from "./utils/piecesMoves/general";
+} from "../utils/piecesMoves/general";
 
-function App() {
+const useGameData = ({
+  onMove,
+  playerColor,
+}: {
+  onMove: Function;
+  playerColor: PieceColor;
+}) => {
   const initial_table = fenToTable(initialPositionFen);
   const [selected, setSelected] = useState<string | null>(null);
   const [table, setTable] = useState<TableType>(initial_table);
   const [moves, setMoves] = useState<Move[]>([]);
   const turn: PieceColor = moves.length % 2 === 0 ? "white" : "black";
-
   const allPossibleMoves = getAllPossibleMoves(table, moves);
-  const possibleMovesOfTurnColor = allPossibleMoves.filter(
-    (move) => getPieceColor(move.piece) === turn
+  const possibleMovesOfTurnColor = getFilteredMoves(
+    table,
+    allPossibleMoves.filter((move) => getPieceColor(move.piece) === turn),
+    moves
   );
+
   const possibleMovesOfNotTurnColor = allPossibleMoves.filter(
     (move) => getPieceColor(move.piece) !== turn
   );
@@ -32,13 +38,14 @@ function App() {
   );
 
   const turnKingPosition = getKingPosition(table, turn);
-  const isCheck = isSquareAttacked(
-    turnKingPosition,
-    possibleMovesOfNotTurnColor
+  const isCheck = possibleMovesOfNotTurnColor.some(
+    (move) => move.flag === "check"
   );
+
   const isMate = isCheck && possibleMovesOfTurnColor.length === 0;
 
   const onClickSquare = (sqName: string) => {
+    if (playerColor !== turn) return;
     if (selected) {
       const move = possibleMovesOfSelected!.find(
         (m) => m.to === sqName && m.from === selected
@@ -48,6 +55,7 @@ function App() {
 
         setMoves([...moves, move]);
         setTable(newTable);
+        onMove(newTable, [...moves, move]);
         setSelected(null);
       } else {
         setSelected(null);
@@ -60,22 +68,22 @@ function App() {
     }
   };
 
-  return (
-    <div>
-      <Table
-        table={table}
-        selected={selected}
-        onClickSquare={onClickSquare}
-        possibleMoves={possibleMovesOfSelected}
-        isCheck={isCheck}
-        turn={turn}
-      />
-      <p>{moves.map((m) => m.from + m.to).join(", ")}</p>
-      <p>turn: {turn}</p>
-      <p>check: {isCheck.toString()}</p>
-      <p>mate: {isMate.toString()}</p>
-    </div>
-  );
-}
+  const updateLocalData = (table: TableType, moves: Move[]) => {
+    setTable(table);
+    setMoves(moves);
+  };
 
-export default App;
+  return {
+    onClickSquare,
+    turnKingPosition,
+    isCheck,
+    isMate,
+    turn,
+    table,
+    updateLocalData,
+    selectedSquare: selected,
+    possibleMovesOfSelected,
+  };
+};
+
+export default useGameData;

@@ -10,6 +10,7 @@ import { getBishopProcessedMoves } from "../bishopMoves";
 import { getRookProcessedMoves } from "../rookMoves";
 import { getQueenProcessedMoves } from "../queenMoves";
 import { getKingProcessedMoves } from "../kingMoves";
+import { getKnightProcessedMoves } from "../knightMoves";
 
 export const getPieceColor = (piece: string): PieceColor => {
   return piece === piece.toUpperCase() ? "white" : "black";
@@ -177,7 +178,7 @@ export const getTableAfterMove = (table: TableType, move: Move) => {
     newTable[promotionPosition[1]][promotionPosition[0]] =
       getPieceColor(move.piece) === "white" ? "Q" : "q";
   } else if (move.flag === "castling") {
-    const { castlingSide, rookInitial, rookGoesTo, kingGoesTo } = move.payload;
+    const { rookInitial, rookGoesTo } = move.payload;
     const rookPosition = getPositionFromSquareName(rookInitial);
     const rook = getPieceFromSquare(table, rookInitial);
     newTable[rookPosition[1]][rookPosition[0]] = null;
@@ -207,30 +208,10 @@ const getMovesOfPiece = (
   if (["q", "Q"].includes(piece)) {
     return getQueenProcessedMoves(sqName, table);
   }
+  if (["n", "N"].includes(piece)) {
+    return getKnightProcessedMoves(sqName, table);
+  }
   return [];
-};
-
-const removeInvalidMoves = (
-  moves: Move[],
-  table: TableType,
-  color: PieceColor,
-  gameMoves: Move[]
-) => {
-  const newMoves: Move[] = [];
-  moves.forEach((move) => {
-    const newTable = getTableAfterMove(table, move);
-    const kingPosition = getKingPosition(newTable, color);
-    const allPossibleMovesOfOpponent = getAllPossibleMoves(
-      newTable,
-      gameMoves,
-      true,
-      true
-    ).filter((m) => getPieceColorFromSquare(newTable, m.from) !== color);
-    if (!isSquareAttacked(kingPosition, allPossibleMovesOfOpponent)) {
-      newMoves.push(move);
-    }
-  });
-  return newMoves;
 };
 
 export const fenToTable = (fen: string): TableType => {
@@ -249,6 +230,30 @@ export const fenToTable = (fen: string): TableType => {
   });
 };
 
+export function tableToFen(table: TableType) {
+  let fen = "";
+
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = table[i][j];
+      if (piece === null) {
+        let k = j + 1;
+        while (k < 8 && table[i][k] === null) {
+          k++;
+        }
+        fen += k - j;
+        j = k - 1;
+      } else {
+        fen += piece;
+      }
+    }
+    if (i !== 7) {
+      fen += "/";
+    }
+  }
+  return fen;
+}
+
 export const isSquareAttacked = (
   sqName: string,
   possibleMovesOfNotTurn: Move[]
@@ -256,37 +261,52 @@ export const isSquareAttacked = (
   return possibleMovesOfNotTurn.some((move) => move.to === sqName);
 };
 
-export const getAllPossibleMoves = (
+export const getFilteredMoves = (
   table: TableType,
-  gameMoves: Move[],
-  passCheckValidation: boolean = false,
-  exceptKing: boolean = false
+  moves: Move[],
+  gameMoves: Move[]
 ) => {
+  return moves.filter((m): boolean => {
+    const pieceColor = getPieceColor(m.piece);
+    const tableAfterMove = getTableAfterMove(table, m);
+    const possibleMovesOfOpponent = getAllPossibleMoves(
+      tableAfterMove,
+      gameMoves.concat(m)
+    ).filter((move) => getPieceColor(move.piece) !== pieceColor);
+    const isCheck = possibleMovesOfOpponent.some(
+      (move) => move.flag === "check"
+    );
+    return !isCheck;
+  });
+};
+
+export const getAllPossibleMoves = (table: TableType, gameMoves: Move[]) => {
   const moves: Move[] = [];
   table.forEach((row, i) => {
-    row.forEach((piece, j) => {
-      if (piece && piece.toLowerCase() !== "k") {
-        const squareName = getSquareName(j, i);
-        const pieceMoves = getMovesOfPiece(piece, squareName, table, gameMoves);
-        if (passCheckValidation) {
-          moves.push(...pieceMoves);
-        } else {
-          const pieceColor = getPieceColor(piece);
-          const validMoves = removeInvalidMoves(
-            pieceMoves,
-            table,
-            pieceColor,
-            gameMoves
-          );
-          moves.push(...validMoves);
-        }
-      }
+    const rowWithSquares = row.map((piece, j) => {
+      const squareName = getSquareName(j, i);
+      return { piece, squareName };
     });
-  });
-  if (exceptKing) {
-    return moves;
-  }
+    for (const { piece, squareName } of rowWithSquares) {
+      if (!piece) continue;
+      const color = getPieceColor(piece);
+      const opponentKingPosition = getKingPosition(
+        table,
+        color === "white" ? "black" : "white"
+      );
+      const pieceMoves = getMovesOfPiece(
+        piece,
+        squareName,
+        table,
+        gameMoves
+      ).map((move) => ({
+        ...move,
+        flag: move.to === opponentKingPosition ? "check" : move.flag,
+      }));
 
+      moves.push(...pieceMoves);
+    }
+  });
   const colorList: PieceColor[] = ["white", "black"];
 
   colorList.forEach((color) => {
@@ -301,16 +321,7 @@ export const getAllPossibleMoves = (
       possibleMovesOfOpponent,
       gameMoves
     );
-    if (passCheckValidation) {
-      moves.push(...kingMoves);
-    }
-    const validKingMoves = removeInvalidMoves(
-      kingMoves,
-      table,
-      color,
-      gameMoves
-    );
-    moves.push(...validKingMoves);
+    moves.push(...kingMoves);
   });
 
   return moves;

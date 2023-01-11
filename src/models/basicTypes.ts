@@ -4,7 +4,9 @@ export type MoveFlag =
   | "eating"
   | "enPassant"
   | "castling"
-  | "promotion";
+  | "promotion"
+  | "check";
+export type TableStatus = "normal" | "check" | "checkmate" | "stalemate";
 export type Move = {
   from: string;
   to: string;

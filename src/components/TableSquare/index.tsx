@@ -20,6 +20,7 @@ interface TableSquareProps {
   name: string;
   onClick?: () => void;
   isCheck: boolean;
+  rotate: boolean;
 }
 
 const TableSquare = ({
@@ -29,14 +30,15 @@ const TableSquare = ({
   onClick,
   name,
   isCheck = false,
+  rotate,
 }: TableSquareProps) => {
   const pieceImage = getPieceImage(piece);
 
   return (
     <div
       style={{
-        width: 50,
-        height: 50,
+        width: "calc(100 / 8)%",
+        aspectRatio: "1/1",
         backgroundColor: boardColors[color][state],
         position: "relative",
         border: isCheck ? "2px solid red" : "none",
@@ -62,6 +64,7 @@ const TableSquare = ({
           style={{
             width: "100%",
             height: "100%",
+            transform: rotate ? "rotate(180deg)" : "none",
           }}
         />
       )}

@@ -10,6 +10,8 @@ function Table({
   possibleMoves,
   turn,
   isCheck,
+  rotatePiecesOfColor = null,
+  rotateBoard = false,
 }: {
   table: (string | null)[][];
   onClickSquare: (name: string) => void;
@@ -17,17 +19,19 @@ function Table({
   possibleMoves: Move[] | undefined;
   turn: PieceColor;
   isCheck: boolean;
+  rotatePiecesOfColor?: PieceColor | null | "both";
+  rotateBoard?: boolean;
 }) {
   return (
     <div
       style={{
         border: "1px solid black",
-        width: "fit-content",
+        width: "100%",
         borderRadius: 10,
         boxShadow: "1px 2px 14px 1px rgba(0, 0, 0, 0.5)",
-        margin: "auto",
         overflow: "hidden",
-        marginTop: 200,
+        aspectRatio: "1/1",
+        transform: rotateBoard ? "rotate(180deg)" : "none",
       }}
     >
       {table.map((row, i) => {
@@ -36,6 +40,8 @@ function Table({
             key={i}
             style={{
               display: "flex",
+              width: "100%",
+              height: "calc(100% / 8)",
             }}
           >
             {row.map((cell, j) => {
@@ -53,6 +59,11 @@ function Table({
               const isCheckSquare = isCheck && isTurnKing;
               return (
                 <TableSquare
+                  rotate={Boolean(
+                    cell &&
+                      (getPieceColor(cell) === rotatePiecesOfColor ||
+                        rotatePiecesOfColor === "both")
+                  )}
                   state={state}
                   piece={cell}
                   onClick={() => onClickSquare(squareName)}
