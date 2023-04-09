@@ -1,5 +1,5 @@
-import { FormControlLabel, Switch } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import { Box, FormControlLabel, Switch, colors } from "@mui/material";
+import { useState } from "react";
 import Table from "../../components/Table";
 import { Move, PieceColor, TableType } from "../../models/basicTypes";
 import { initialPositionFen } from "../../utils/piecesMoves/constants";
@@ -106,20 +106,22 @@ function LocalMatch() {
     }
   };
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+    <Box
+      width={1}
+      height={1}
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      bgcolor={colors.blueGrey[100]}
     >
-      <div
-        style={{
-          width: "30%",
-        }}
+      <Box
+        my={2}
+        width={
+          window.innerWidth > window.innerHeight
+            ? window.innerHeight * 0.6
+            : window.innerWidth * 0.6
+        }
       >
         <Table
           table={table}
@@ -131,7 +133,7 @@ function LocalMatch() {
           rotateBoard={isFlipped && turn === "black"}
           rotatePiecesOfColor={isFlipped ? "both" : "black"}
         />
-      </div>
+      </Box>
       <FormControlLabel
         control={<Switch />}
         label="Flip board on black turn"
@@ -144,7 +146,7 @@ function LocalMatch() {
       <p>mate: {isMate.toString()}</p>
       <p>king position: {turnKingPosition}</p>
       <p>algebraic notation: {getAlgebraicNotation(moves)}</p> */}
-    </div>
+    </Box>
   );
 }
 export default LocalMatch;

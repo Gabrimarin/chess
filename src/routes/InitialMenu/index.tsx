@@ -1,47 +1,51 @@
-import React from "react";
-import { Button } from "react-bootstrap";
+import { Box, Button, Typography, colors } from "@mui/material";
 import { Link } from "react-router-dom";
 
 function InitialMenu() {
   const uuid = crypto.randomUUID();
 
   return (
-    <div
-      style={{
-        display: "flex",
-        width: "100%",
-        height: "100%",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+    <Box
+      display="flex"
+      width={1}
+      height={1}
+      alignItems="center"
+      justifyContent="center"
+      bgcolor={colors.blueGrey[100]}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          border: `1px solid black`,
-          padding: 20,
-          borderRadius: 10,
-        }}
+      <Box
+        display="flex"
+        flexDirection="column"
+        padding={6}
+        borderRadius={2}
+        boxShadow={10}
+        bgcolor={colors.blueGrey[50]}
       >
-        <h1>Chessy Mate</h1>
+        <Typography variant="h3">Chessy Mate</Typography>
         <Link to={"local"}>
           <Button
-            style={{
-              width: "100%",
+            fullWidth
+            variant="contained"
+            sx={{
+              mt: 4,
             }}
           >
-            <h2>Local match</h2>
+            LOCAL GAME
           </Button>
         </Link>
-        <div style={{ height: 20 }} />
         <Link to={"online/" + uuid}>
-          <Button>
-            <h2>Online match</h2>
+          <Button
+            fullWidth
+            variant="contained"
+            sx={{
+              mt: 2,
+            }}
+          >
+            ONLINE GAME
           </Button>
         </Link>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
