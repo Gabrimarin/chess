@@ -6,7 +6,7 @@ import { getDatabase } from "firebase/database";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAVTwkDPH6_GM7MEShRJo1HPWK2Bu5-uE8",
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: "chessy-mate.firebaseapp.com",
   databaseURL: "https://chessy-mate-default-rtdb.firebaseio.com",
   projectId: "chessy-mate",
